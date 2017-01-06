@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.hand.mapper.FilmMapper">
+    <resultMap id="filmMap" type="com.hand.bean.Film">
+        <id column="film_id" property="id" javaType="java.lang.Integer"/>
+        <result column="title" property="title" javaType="java.lang.String"/>
+        <result column="description" property="description" javaType="java.lang.String"/>
+        <result column="language_id" property="languageId" javaType="java.lang.Integer"/>
+        <association property="language" javaType="com.hand.bean.Language">
+            <id column="language_id" property="languageId" jdbcType="TINYINT"/>
+            <result column="name" property="name" jdbcType="VARCHAR"/>
+        </association>
+    </resultMap>
+    <insert id="addFilm" useGeneratedKeys="true" keyProperty="id">
+        insert into film (title,description,language_id) values(#{title},#{description},#{languageId});
+    </insert>
+    <select id="getCount" resultType="int">
+        SELECT count(1) FROM `film` WHERE 1=1
+        <if test="title!=null">
+            and title like concat('%',#{title},'%')
+        </if>
+        <if test="languageId!=null">
+            and language_id = #{languageId}
+        </if>
+        ;
+    </select>
+    <select id="getFilmsByPage" resultMap="filmMap">
+        SELECT film.*,language.name from `film`,`language` where 1=1 AND language.language_id=film.language_id
+        <if test="entity.title!=null">
+            and film.title like concat('%',#{entity.title},'%')
+        </if>
+        <if test="entity.languageId!=null">
+            and film.language_id = #{entity.languageId}
+        </if>
+        <if test="entity.description!=null">
+            and film.description = #{entity.description}
+        </if>
+        limit #{first},#{pageSize};
+    </select>
+
+</mapper>

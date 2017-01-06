@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>电影列表</title>
+    <link rel="stylesheet" href="assets/bootstrap/dist/css/bootstrap.css">
+    <script src="assets/jquery/dist/jquery.js"></script>
+    <script src="assets/bootstrap/dist/js/bootstrap.js"></script>
+    <style>
+        .control-label{
+            line-height:34px !important;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="row" style="margin-top: 30px;">
+        <div class="col-sm-4 row">
+            <div class="col-sm-3"><label class="control-label pull-right">电影标题</label></div>
+            <div class="col-sm-9"><input class="form-control" type="text" id="title"/></div>
+        </div>
+        <div class="col-sm-4 row">
+            <div class="col-sm-3"><label class="control-label pull-right">语言</label></div>
+            <div class="col-sm-9"><input class="form-control" type="text" id="languageId"/></div>
+        </div>
+        <div class="col-sm-1"><button class="btn btn-primary query">查询</button></div>
+        <div class="col-sm-1"><button class="btn btn-success insert" data-toggle="modal" data-target="#myModal">新增</button></div>
+    </div>
+</div>
+<div class="container">
+    <table id="filmTable" class="table table-striped">
+        <caption align="center"> 当前电影列表 </caption>
+        <thead>
+        <tr>
+            <th> 电影名称 </th>
+            <th> 电影描述 </th>
+            <th> 语言 </th>
+        </tr>
+        </thead>
+        <tbody>
+        </tbody>
+    </table>
+</div>
+
+<table align="center" width="100%">
+    <tr align="center">
+        <td>
+            <div class="container">
+                <div class="row">
+                    <div class="col-sm-8">
+                        <ul class="pagination firstPage">
+                            <li><a href="#">首页</a></li>
+                            <!--<li><a href="#">上一页</a></li>-->
+                        </ul>
+                        <ul class="pagination pageStyle">
+                            <!--<li><a href="Movielist.html">&laquo;</a></li>-->
+                            <!--<li class="active"><a href="#">1</a></li>-->
+                            <!--<li><a href="#">&raquo;</a></li>-->
+                        </ul>
+                        <ul class="pagination lastPage">
+                            <li><a href="#">尾页</a></li>
+                        </ul>
+                    </div>
+                    <div class="col-sm-1">
+                        <label class="showPage"></label>
+                    </div>
+                    <div class="col-sm-3">
+                        <div style="margin-top: 19px;">
+                            <label>页面大小：</label>
+                            <input class="form-control" style="width: 80px;display: inline-block;" id="size" type="text" size="2" value="10"/>
+                            <button style="margin-top: -3px;" class="btn btn-primary change">调整</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </td>
+    </tr>
+</table>
+
+<script id="rowTemplate" type="application/html">
+        <tr>
+            <td></td><td></td><td></td><td></td>
+        </tr>
+    </script>
+<script id="pageTemplate" type="application/html">
+        <li><a href="#"></a></li>
+</script>
+
+
+<!-- Modal -->
+<div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+                <h4 class="modal-title" id="myModalLabel">Modal title</h4>
+            </div>
+            <div class="modal-body clearfix">
+                <div class="col-xs-6">
+                    <div class="input-group" style="width: 100%">
+                        <label  class="control-label">标题</label>
+                        <input type="text" class="form-control title_input" placeholder="标题">
+                    </div>
+                </div>
+                <div class="col-xs-6">
+                    <div class="input-group" style="width: 100%">
+                        <label  class="control-label">语言</label>
+                        <select name="language_input" class="form-control" id="language_input">
+                        </select>
+                    </div>
+                </div>
+                <div class="col-xs-12">
+                    <div class="input-group" style="width: 100%;margin-top: 20px;margin-bottom: 20px;">
+                        <label  class="control-label">描述</label>
+                        <textarea name="description_input" class="form-control" id="description_input"></textarea>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" data-dismiss="modal">关闭</button>
+                <button type="button" class="btn btn-primary insert-btn">保存</button>
+            </div>
+        </div>
+    </div>
+</div>
+<script type="text/javascript">
+    //查询按钮
+    $(".query").click(function () {
+        query({
+            title:$('#title').val(),
+            languageId:$('#languageId').val(),
+            nowPage:1,
+            pageSize:$('#size').val()
+        });
+    });
+
+    //调整按钮
+    $(".change").click(function () {
+        query({nowPage:1,pageSize:$('#size').val()});
+    });
+    //获得语言列表
+    $.ajax({
+        type: "GET",
+        url: "/getLanguage",
+        dataType: "json",
+        success: function (data) {
+            var html = "";
+            $.each(data, function (key, val) {
+                html += "<option value=" + val.languageId + ">" + val.name + "</option>";
+            });
+            $("#language_input").append(html);
+
+        }
+    });
+
+
+    //新增
+    $(".insert-btn").click(function (e) {
+        e.preventDefault();
+        $.ajax({
+            type: "POST",
+            url: "addFilms",
+            dataType: "json",
+            contentType: "application/json",
+            data: JSON.stringify({
+                title: $(".title_input").val(),
+                description: $("#description_input").val(),
+                languageId: $("#language_input").val()
+            }),
+            success: function (data) {
+                if (data) {
+                    alert("新增成功");
+                } else {
+                    alert("新增失败");
+                }
+            }
+        });
+    });
+
+    var size=10;
+    $(document).ready(function () {
+        query({
+            nowPage:1,
+            pageSize:size
+        })
+    });
+    function query(queryInfo){
+        var defaultArg = {
+            title: "",
+            languageId: ""
+        };
+        queryInfo = $.extend({}, defaultArg, queryInfo);
+        $.ajax({
+            url:"/getFilms",
+            method:"GET",
+            dataType:"json",
+            data:queryInfo,
+            success:function (data) {
+                $('#filmTable tbody').empty();
+                for(var item of data.list){
+                    var $template = $($('#rowTemplate').html()).clone();
+                    $template.children("td").eq(0).text(item.title)
+                    $template.children('td').eq(1).text(item.description);
+                    $template.children('td').eq(2).text(item.language.name);
+                    $('#filmTable tbody').append($template);
+                }
+
+                $(".pageStyle").empty();
+                if(data.pageCount<10){
+                    for(var i=1;i<=data.pageCount;i++){
+                        var $pageTemplate = $($('#pageTemplate').html()).clone();
+                        $pageTemplate.children('a').eq(0).text(i);
+                        $(".pageStyle").append($pageTemplate);
+                    }
+                }
+                else{
+                    if(data.nowPage<5){
+                        for(var i=1;i<=10;i++){
+                            var $pageTemplate = $($('#pageTemplate').html()).clone();
+                            $pageTemplate.children('a').eq(0).text(i);
+                            $(".pageStyle").append($pageTemplate);
+                        }
+
+                    }
+                    else if(data.pageCount-data.nowPage<=5) {
+                        for (var i = data.pageCount - 9;i<=data.pageCount;i++){
+                            var $pageTemplate = $($('#pageTemplate').html()).clone();
+                            $pageTemplate.children('a').eq(0).text(i);
+                            $(".pageStyle").append($pageTemplate);
+                        }
+                    }
+                    else{
+                        for(var i=data.nowPage-4;i<data.nowPage;i++){
+                            var $pageTemplate = $($('#pageTemplate').html()).clone();
+                            $pageTemplate.children('a').eq(0).text(i);
+                            $(".pageStyle").append($pageTemplate);
+                        }
+                        for(var i=data.nowPage;i<=data.nowPage+5;i++){
+                            var $pageTemplate = $($('#pageTemplate').html()).clone();
+                            $pageTemplate.children('a').eq(0).text(i);
+                            /*if(i==data.nowPage){
+                             $pageTemplate.children('li').addClass("ative");
+                             }*/
+                            $(".pageStyle").append($pageTemplate);
+                            if((i+1)>data.pageCount){break;}
+                        }
+                    }
+
+                }
+                $(".pageStyle").find("a").click(function(){
+                    //window.alert($(this).text)
+                    $(".pageStyle>li").removeClass();
+                    $(this).addClass('active');
+                    query({
+                        title:$('#title').val(),
+                        languageId:$('#languageId').val(),
+                        pageSize:size,
+                        nowPage:$(this).html()
+                    })
+                });
+                //首页
+                $(".firstPage").find('a').eq(0).click(function () {
+                    query({
+                        title:$('#title').val(),
+                        languageId:$('#languageId').val(),
+                        nowPage:1,
+                        pageSize:size
+                    })
+                });
+
+                //尾页
+                $(".lastPage").find('a').eq(0).click(function () {
+                    query({
+                        title:$('#title').val(),
+                        languageId:$('#languageId').val(),
+                        nowPage:data.pageCount,
+                        pageSize:size
+                    })
+                })
+            }
+
+        })
+    }
+</script>
+</body>
+</html>
